@@ -1,24 +1,4 @@
-"""
-# -*- coding = utf-8 -*-
-#!/usr/bin/env python
-# @Project : kspred
-# @File : preprocess.py
-# @Author : ycy
-# @Time : 2022/11/21 11:01
-# @Software : PyCharm Professional
-"""
 import argparse
-
-"""
-# -*- coding = utf-8 -*-
-#!/usr/bin/env python
-# @Project : Kinase_substrate_prediction
-# @File : downloadData.py
-# @Author : ycy
-# @Time : 2022/10/20 23:26
-# @Software : PyCharm Professional
-"""
-
 import os
 import sys
 import h5py

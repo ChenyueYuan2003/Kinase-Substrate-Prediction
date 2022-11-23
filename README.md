@@ -1,5 +1,5 @@
 # Kinase Substrate Prediction
-This is a repository for Kinase Substrate Prediction.Based on kinase-substrate phosphorylation data in [PhosphoSitePlus](https://www.phosphosite.org/) and corresponding embedding features in [Bioteque](https://bioteque.irbbarcelona.org/), I build a MLP for kinase-substrate prediction.
+This is a repository for Kinase Substrate Prediction. Based on kinase-substrate phosphorylation data in [PhosphoSitePlus](https://www.phosphosite.org/) and corresponding embedding features in [Bioteque](https://bioteque.irbbarcelona.org/), I build a MLP for kinase-substrate prediction.
 
 The model is trained through 5-fold cross validation 10 times. The evaluation metrics are AUROC, precision, recall and accuracy. 
 

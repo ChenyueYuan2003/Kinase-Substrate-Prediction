@@ -1,22 +1,3 @@
-"""
-# -*- coding = utf-8 -*-
-#!/usr/bin/env python
-# @Project : kspred
-# @File : train.py
-# @Author : ycy
-# @Time : 2022/11/21 15:31
-# @Software : PyCharm Professional
-"""
-
-"""
-# -*- coding = utf-8 -*-
-#!/usr/bin/env python
-# @Project : Kinase_substrate_prediction
-# @File : try3.py
-# @Author : ycy
-# @Time : 2022/11/8 20:43
-# @Software : PyCharm Professional
-"""
 import os
 import time
 
@@ -161,10 +142,6 @@ def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_p
 
             torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
 
-    print(torch.cat(metrics['acc']))
-    print(torch.cat(metrics['precision']))
-    print(torch.cat(metrics['recall']))
-    print(torch.cat(metrics['auroc']))
     return metrics
 
 
@@ -205,22 +182,22 @@ def plot(metrics):
     plt.subplot(2, 2, 1)
     sns.boxplot(y='auroc', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    # plt.title('auroc')
+    
     # --------------
     plt.subplot(2, 2, 2)
     sns.boxplot(y='acc', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    # plt.title('acc')
+    
     # --------------
     plt.subplot(2, 2, 3)
     sns.boxplot(y='precision', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    # plt.title('precision')
+    
     # --------------
     plt.subplot(2, 2, 4)
     sns.boxplot(y='recall', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    # plt.title('recall')
+    
     plt.subplots_adjust(wspace=0.5, hspace=0.3)
     # savefig
     plt.savefig('./result/boxplot.png', dpi=300)

@@ -1,12 +1,3 @@
-"""
-# -*- coding = utf-8 -*-
-#!/usr/bin/env python
-# @Project : kspred
-# @File : model_architecture_trial.py
-# @Author : ycy
-# @Time : 2022/12/7 11:37
-# @Software : PyCharm Professional
-"""
 import nni
 import numpy as np
 import torch

@@ -1,13 +1,3 @@
-"""
-# -*- coding = utf-8 -*-
-#!/usr/bin/env python
-# @Project : kspred
-# @File : model_trial.py
-# @Author : ycy
-# @Time : 2022/12/5 18:14
-# @Software : PyCharm Professional
-"""
-
 import torchmetrics
 import torch.nn as nn
 
@@ -132,50 +122,3 @@ for epoch in range(40):
     nni.report_intermediate_result(acc_val)
 nni.report_final_result(acc_val)
 
-# for x_batch, y_batch in train_loader:
-#     print(x_batch.shape, y_batch.shape)
-#     print(x_batch[:10])
-#     print(y_batch[:10])
-#     break
-# print('------------------------------------')
-# for x, y in test_loader:
-#     print(x.shape, y.shape)
-#     print(x[:10])
-#     print(y[:10])
-#     break
-
-
-#
-#     # t_end = time.time()
-#     # if (epoch + 1) % 1 == 0:
-#     #     logger.info(
-#     #         'Repeat number {}/{}, Fold number {} / {}, Epoch {} / {} '.format(repeat + 1, data_repeat,
-#     #                                                                           fold + 1,
-#     #                                                                           kfold.get_n_splits(),
-#     #                                                                           epoch + 1, epochs))
-#     #     logger.info(
-#     #         f"epoch:{epoch + 1}, epoch time: {t_end - t_start:.5}, avg_train_loss: {np.mean(loss_record):.8f}, avg_test_loss: {np.mean(test_loss_record):.8f}")
-#     #
-#     #     logger.info(
-#     #         f"aur: {val_metrics['auroc']:.5f}, pre: {val_metrics['prec']:.5f}, rec: {val_metrics['rec']:.5f},acc: {val_metrics['acc_test']:.5f}")
-#     # # # 早停止
-#     # early_stopping(np.mean(test_loss_record), model)
-#     # # 达到早停止条件时，early_stop会被置为True
-#     # if early_stopping.early_stop:
-#     #     logger.info("---------Early stopping--------")
-#
-#     # break  # 跳出迭代，结束训练
-#
-#     # if (epoch + 1) % epochs == 0:
-#     #     metrics['acc'].append(torch.tensor([val_metrics['acc_test']], device=device))
-#     #     metrics['precision'].append(torch.tensor([val_metrics['prec']], device=device))
-#     #     metrics['recall'].append(torch.tensor([val_metrics['rec']], device=device))
-#     #     metrics['auroc'].append(torch.tensor([val_metrics['auroc']], device=device))
-#     metric_collection.reset()
-#
-# # torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
-#
-# report final result
-
-# # logger.info('Final result is %g', val_metrics['acc_test'])
-# # logger.info('Send final result done.')

@@ -4,6 +4,7 @@ matplotlib-base==3.5.2
 matplotlib-inline==0.1.6
 numpy-base==1.23.3
 numpy==1.23.3
+nni==2.10
 packaging==21.3
 pandas==1.4.4
 pickleshare==0.7.5

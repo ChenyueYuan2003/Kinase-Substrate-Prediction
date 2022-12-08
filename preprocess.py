@@ -91,6 +91,8 @@ def get_random_negative_samples(gen2emb, k_ids, s_ids, output_path, repeat):
         neg_samples_s_ids = []
         for i in range(len(k_ids)):
             neg_samples_s_ids.append(random.sample(s_ids, 1)[0])
+            while neg_samples_s_ids[i] == s_ids[i]:
+                neg_samples_s_ids[i] = random.sample(s_ids, 1)[0]
 
         random_neg_samples = pd.DataFrame({'KIN_ACC_ID': k_ids, 'SUB_ACC_ID': neg_samples_s_ids})
 

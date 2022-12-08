@@ -17,6 +17,7 @@ from torchmetrics import MetricCollection, Accuracy, Precision, Recall, AUROC
 
 import train_param_parsing
 
+
 # config logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -26,21 +27,18 @@ class Net(torch.nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.f = nn.Sequential(
-            nn.Linear(256, 1024),
-            nn.BatchNorm1d(1024),
+            nn.Linear(256, 2048),
+
             nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(1024, 2048),
-            nn.BatchNorm1d(2048),
+            nn.Dropout(0.75),
+            nn.Linear(2048, 1024),
+
             nn.ReLU(),
-            nn.Dropout(0.6),
-            nn.Linear(2048, 256),
+            nn.Dropout(0.75),
+            nn.Linear(1024, 128),
+
             nn.ReLU(),
-            nn.Linear(256, 64),
-            nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1))
+            nn.Linear(128, 1))
 
     def forward(self, x):
         x = self.f(x)
@@ -51,6 +49,48 @@ class Net(torch.nn.Module):
         x = self.f(x)
         x = torch.sigmoid(x)
         return x
+
+
+class EarlyStopping:
+
+    def __init__(self, mode='min', patience=7, verbose=False, delta=0, trace_func=logger.info):
+
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.delta = delta
+        self.path = 'path'
+        self.trace_func = trace_func
+        self.mode = mode
+
+        self.__value = -math.inf if mode == 'max' else math.inf
+
+    def __call__(self, metrics, model):
+
+        if self.best_score is None:
+            self.best_score = metrics
+            # self.save_checkpoint(val_loss, model)
+        elif (self.mode == 'min' and metrics > self.best_score + self.delta) or (
+                self.mode == 'max' and metrics < self.best_score + self.delta):
+            self.counter += 1
+            self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = metrics
+            # self.save_checkpoint(val_loss, model)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model):
+        '''Saves model when validation loss decrease.'''
+        if self.verbose:
+            self.trace_func(
+                f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+        torch.save(model.state_dict(), self.path)
+        self.val_loss_min = val_loss
 
 
 def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_path, data_repeat, model_path):
@@ -82,6 +122,8 @@ def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_p
             # reinstantiate the model
             model.apply(init_weights)
             model.to(device)
+
+            early_stopping = EarlyStopping(mode='min', patience=20)
 
             for epoch in range(epochs):
                 t_start = time.time()
@@ -120,9 +162,11 @@ def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_p
                         metric_collection.forward(pred, y_batch.int())
 
                 val_metrics = metric_collection.compute()
+                metric_collection.reset()
+
 
                 t_end = time.time()
-                if (epoch + 1) % 2 == 0:
+                if (epoch + 1) % 1 == 0:
                     logger.info(
                         'Repeat number {}/{}, Fold number {} / {}, Epoch {} / {} '.format(repeat + 1, data_repeat,
                                                                                           fold + 1,
@@ -133,14 +177,30 @@ def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_p
 
                     logger.info(
                         f"aur: {val_metrics['auroc']:.5f}, pre: {val_metrics['prec']:.5f}, rec: {val_metrics['rec']:.5f},acc: {val_metrics['acc_test']:.5f}")
-                if (epoch + 1) % epochs == 0:
+                # # 早停止
+                early_stopping(np.mean(test_loss_record), model)
+                # # 达到早停止条件时，early_stop会被置为True
+                if early_stopping.early_stop:
+                    logger.info("---------Early stopping--------")
                     metrics['acc'].append(torch.tensor([val_metrics['acc_test']], device=device))
                     metrics['precision'].append(torch.tensor([val_metrics['prec']], device=device))
                     metrics['recall'].append(torch.tensor([val_metrics['rec']], device=device))
                     metrics['auroc'].append(torch.tensor([val_metrics['auroc']], device=device))
-                metric_collection.reset()
+                    torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
+                    break
 
-            torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
+
+
+                # if (epoch + 1) % epochs == 0:
+                #     metrics['acc'].append(torch.tensor([val_metrics['acc_test']], device=device))
+                #     metrics['precision'].append(torch.tensor([val_metrics['prec']], device=device))
+                #     metrics['recall'].append(torch.tensor([val_metrics['rec']], device=device))
+                #     metrics['auroc'].append(torch.tensor([val_metrics['auroc']], device=device))
+                # metric_collection.reset()
+
+            # torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
+
+
 
     return metrics
 
@@ -182,22 +242,22 @@ def plot(metrics):
     plt.subplot(2, 2, 1)
     sns.boxplot(y='auroc', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    
+
     # --------------
     plt.subplot(2, 2, 2)
     sns.boxplot(y='acc', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    
+
     # --------------
     plt.subplot(2, 2, 3)
     sns.boxplot(y='precision', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    
+
     # --------------
     plt.subplot(2, 2, 4)
     sns.boxplot(y='recall', x='repeat', data=metrics, palette="Set3")
     plt.xlabel('')
-    
+
     plt.subplots_adjust(wspace=0.5, hspace=0.3)
     # savefig
     plt.savefig('./result/boxplot.png', dpi=300)
@@ -207,6 +267,8 @@ def plot(metrics):
 def main():
     # get arguments
     args = train_param_parsing.get_args()
+
+
     logger.info(args)
 
     if not os.path.exists(args.model_path):
@@ -215,7 +277,9 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = Net()
+    # model = Net(last_hidden_size=128)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     loss_f = torch.nn.BCELoss()
 
     metrics = train(model, fold_num=args.fold_num, epochs=args.epochs, batch_size=args.batch_size,

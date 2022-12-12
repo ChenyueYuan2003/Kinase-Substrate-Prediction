@@ -17,28 +17,54 @@ from torchmetrics import MetricCollection, Accuracy, Precision, Recall, AUROC
 
 import train_param_parsing
 
-
 # config logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+search_space = {
+
+    "batch_size": [32, 64, 128, 256, 512],
+    "lr": [0.0001, 0.001, 0.01, 0.1],
+    "activation": ['relu', 'tanh', 'sigmoid']
+
+}
 
 
 class Net(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, activation):
         super(Net, self).__init__()
-        self.f = nn.Sequential(
-            nn.Linear(256, 2048),
-
-            nn.ReLU(),
-            nn.Dropout(0.75),
-            nn.Linear(2048, 1024),
-
-            nn.ReLU(),
-            nn.Dropout(0.75),
-            nn.Linear(1024, 128),
-
-            nn.ReLU(),
-            nn.Linear(128, 1))
+        if activation == 'relu':
+            self.f = nn.Sequential(
+                nn.Linear(256, 2048),
+                nn.ReLU(),
+                nn.Dropout(0.75),
+                nn.Linear(2048, 1024),
+                nn.ReLU(),
+                nn.Dropout(0.75),
+                nn.Linear(1024, 128),
+                nn.ReLU(),
+                nn.Linear(128, 1))
+        elif activation == 'tanh':
+            self.f = nn.Sequential(
+                nn.Linear(256, 2048),
+                nn.Tanh(),
+                nn.Dropout(0.75),
+                nn.Linear(2048, 1024),
+                nn.Tanh(),
+                nn.Dropout(0.75),
+                nn.Linear(1024, 128),
+                nn.Tanh(),
+                nn.Linear(128, 1))
+        elif activation == 'sigmoid':
+            self.f = nn.Sequential(
+                nn.Linear(256, 2048),
+                nn.Sigmoid(),
+                nn.Dropout(0.75),
+                nn.Linear(2048, 1024),
+                nn.Sigmoid(),
+                nn.Dropout(0.75),
+                nn.Linear(1024, 128),
+                nn.Sigmoid(),
+                nn.Linear(128, 1))
 
     def forward(self, x):
         x = self.f(x)
@@ -73,8 +99,8 @@ class EarlyStopping:
         if self.best_score is None:
             self.best_score = metrics
             # self.save_checkpoint(val_loss, model)
-        elif (self.mode == 'min' and metrics > self.best_score + self.delta) or (
-                self.mode == 'max' and metrics < self.best_score + self.delta):
+        elif (self.mode == 'min' and metrics >= self.best_score + self.delta) or (
+                self.mode == 'max' and metrics <= self.best_score + self.delta):
             self.counter += 1
             self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
@@ -93,7 +119,8 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
-def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_path, data_repeat, model_path):
+def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_path, data_repeat, model_path,
+          optimization_num=None):
     logger.info('Training started...')
     logger.info(f"using device: {device}")
     # store the  accuracy, precision,recall for plotting
@@ -164,14 +191,14 @@ def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_p
                 val_metrics = metric_collection.compute()
                 metric_collection.reset()
 
-
                 t_end = time.time()
                 if (epoch + 1) % 1 == 0:
                     logger.info(
-                        'Repeat number {}/{}, Fold number {} / {}, Epoch {} / {} '.format(repeat + 1, data_repeat,
-                                                                                          fold + 1,
-                                                                                          kfold.get_n_splits(),
-                                                                                          epoch + 1, epochs))
+                        'Optimization number {}, Repeat number {} / {}, Fold number {} / {}, Epoch {} / {} '.format(
+                            optimization_num + 1, repeat + 1, data_repeat,
+                            fold + 1,
+                            kfold.get_n_splits(),
+                            epoch + 1, epochs))
                     logger.info(
                         f"epoch:{epoch + 1}, epoch time: {t_end - t_start:.5}, avg_train_loss: {np.mean(loss_record):.8f}, avg_test_loss: {np.mean(test_loss_record):.8f}")
 
@@ -186,10 +213,8 @@ def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_p
                     metrics['precision'].append(torch.tensor([val_metrics['prec']], device=device))
                     metrics['recall'].append(torch.tensor([val_metrics['rec']], device=device))
                     metrics['auroc'].append(torch.tensor([val_metrics['auroc']], device=device))
-                    torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
+                    # torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
                     break
-
-
 
                 # if (epoch + 1) % epochs == 0:
                 #     metrics['acc'].append(torch.tensor([val_metrics['acc_test']], device=device))
@@ -200,9 +225,20 @@ def train(model, fold_num, epochs, batch_size, optimizer, loss_f, device, data_p
 
             # torch.save(model.state_dict(), model_path + f'model_{repeat + 1}_{fold + 1}.pth')
 
+    metrics['acc'] = torch.cat(metrics['acc']).to('cpu').numpy()
+    metrics['precision'] = torch.cat(metrics['precision']).to('cpu').numpy()
+    metrics['recall'] = torch.cat(metrics['recall']).to('cpu').numpy()
+    metrics['auroc'] = torch.cat(metrics['auroc']).to('cpu').numpy()
 
+    repeat = []
+    for i in range(50):
+        repeat.append(math.ceil((i + 1) / 5))
+    metrics['repeat'] = repeat
+    # metrics = pd.DataFrame.from_dict(metrics, orient='index')
+    metrics = pd.DataFrame(metrics)
+    metrics.to_csv(f'./metrics_2/metrics_{optimization_num}.csv', index=False)
 
-    return metrics
+    # return metrics
 
 
 def get_data(device, data_path, repeat):
@@ -264,11 +300,29 @@ def plot(metrics):
     plt.show()
 
 
+def get_search_space_size(search_space):
+    search_space_size = 1
+    for key in search_space.keys():
+        search_space_size *= len(search_space[key])
+    return search_space_size
+
+
+def get_next_parameters(search_space, index):
+    search_space_size = get_search_space_size(search_space)
+    if index >= search_space_size:
+        return None
+    else:
+        search_space_index = index
+        search_space_next = {}
+        for key in search_space.keys():
+            search_space_next[key] = search_space[key][search_space_index % len(search_space[key])]
+            search_space_index = search_space_index // len(search_space[key])
+        return search_space_next
+
+
 def main():
     # get arguments
     args = train_param_parsing.get_args()
-
-
     logger.info(args)
 
     if not os.path.exists(args.model_path):
@@ -276,20 +330,29 @@ def main():
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = Net()
-    # model = Net(last_hidden_size=128)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    loss_f = torch.nn.BCELoss()
+    search_space_size = get_search_space_size(search_space)
+    for i in range(search_space_size)[23:]:
+        params = get_next_parameters(search_space, i)
+        if params is None:
+            break
+        else:
+            logger.info(params)
 
-    metrics = train(model, fold_num=args.fold_num, epochs=args.epochs, batch_size=args.batch_size,
-                    data_repeat=args.data_repeat,
-                    data_path=args.data_path, model_path=args.model_path,
-                    optimizer=optimizer, loss_f=loss_f,
-                    device=device)
-    if not os.path.exists('./result'):
-        os.makedirs('./result')
-    plot(metrics)
+            model = Net(params['activation'])
+            # model = Net(last_hidden_size=128)
+            optimizer = torch.optim.Adam(model.parameters(), lr=params['lr'])
+            # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+            loss_f = torch.nn.BCELoss()
+
+            train(model, fold_num=args.fold_num, epochs=args.epochs, batch_size=params['batch_size'],
+                  data_repeat=args.data_repeat,
+                  data_path=args.data_path, model_path=args.model_path,
+                  optimizer=optimizer, loss_f=loss_f,
+                  device=device, optimization_num=i)
+
+    # if not os.path.exists('./result'):
+    #     os.makedirs('./result')
+    # plot(metrics)
 
 
 if __name__ == '__main__':

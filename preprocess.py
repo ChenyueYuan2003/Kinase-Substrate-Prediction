@@ -85,14 +85,17 @@ def get_unique_kspairs():
     data_ks_unique.to_csv('./data/ks_unique.csv', index=False)
 
 
-def get_random_negative_samples(gen2emb, k_ids, s_ids, output_path, repeat):
+def get_random_negative_samples(gen2emb, ks_ids, k_ids, s_ids, output_path, repeat):
+    gp = ks_ids.groupby('KIN_ACC_ID')
     # generate random negative samples ids for each kinase
     for j in range(repeat):
         neg_samples_s_ids = []
         for i in range(len(k_ids)):
-            neg_samples_s_ids.append(random.sample(s_ids, 1)[0])
-            while neg_samples_s_ids[i] == s_ids[i]:
-                neg_samples_s_ids[i] = random.sample(s_ids, 1)[0]
+            positive_s_ids = gp.get_group(k_ids[i])['SUB_ACC_ID'].values.tolist()
+            negative_s_ids = s_ids.copy()
+            for i in range(len(positive_s_ids)):
+                negative_s_ids.pop(negative_s_ids.index(positive_s_ids[i]))
+            neg_samples_s_ids.append(random.sample(negative_s_ids, 1)[0])
 
         random_neg_samples = pd.DataFrame({'KIN_ACC_ID': k_ids, 'SUB_ACC_ID': neg_samples_s_ids})
 
@@ -163,7 +166,7 @@ def main():
     gen_emb.tofile(args.data_output + 'pos_emb.csv', sep=', ', format='%f')
 
     # get the embedding of random negative samples
-    get_random_negative_samples(gen2emb, k_ids, s_ids, args.data_output, args.repeat)
+    get_random_negative_samples(gen2emb, ks_ids, k_ids, s_ids, args.data_output, args.repeat)
     print('data preparation finished')
 
 

@@ -41,6 +41,7 @@ python train.py
 
 ### Hyperparameter Optimization
 
+#### With nni
 In order to find the best hyperparameters, including learning rate, batch size, activation function. I use
 the [nni](https://github.com/microsoft/nni) framework to optimize the model. The hyperparameter search_sapce is
 in ```trial.py```. The best hyperparameters are as follows:
@@ -58,6 +59,13 @@ My experiment results are as follows:
 <img src="optimization experiment result/hyperparameter_search_space.png"/>
 <img src="optimization experiment result/hyperparameter_metrics.png"/>
 
+#### MY OWN
+I also use my own method to optimize the model. The hyperparameter search_space is in the top of```train.py```.
+
+All the metrics.csv files are in ```./metrics```. And the boxplots are in ```./hyperparameter_optimization_boxplot```.
+
+
+<img src="hyperparameter_optimization_boxplot/all_boxplot.png"/>
 ### Model Architecture Optimization
 
 In order to find the best model architecture, including the number of neurons in hidden layers and the rate of drop out

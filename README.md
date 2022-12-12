@@ -66,6 +66,7 @@ All the metrics.csv files are in ```./metrics```. And the boxplots are in ```./h
 
 
 <img src="hyperparameter_optimization_boxplot/all_boxplot.png"/>
+
 ### Model Architecture Optimization
 
 In order to find the best model architecture, including the number of neurons in hidden layers and the rate of drop out

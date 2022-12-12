@@ -1,12 +1,3 @@
-"""
-# -*- coding = utf-8 -*-
-#!/usr/bin/env python
-# @Project : kspred
-# @File : trial.py
-# @Author : ycy
-# @Time : 2022/12/5 17:56
-# @Software : PyCharm Professional
-"""
 import nni
 
 search_space = {
@@ -19,32 +10,20 @@ search_space = {
 
 from nni.experiment import Experiment
 
-# config = ExperimentConfig(
-#     search_space=search_space,
-#     training_service_platform="local",
-#     # tuner=AlgorithmConfig(name='TPE'),
-#     training_service=LocalConfig(
-#         use_active_gpu=True,
-#         )
-# )
 
-# experiment = Experiment('local')
-# experiment.config.experiment_name = 'ksp_trial'
-# experiment.config.trial_command = 'python model_trial.py'
-# experiment.config.trial_code_directory = '.'
-# experiment.config.search_space = search_space
-# experiment.config.tuner.name = 'TPE'
-# experiment.config.tuner.class_args['optimize_mode'] = 'maximize'
-# experiment.config.max_trial_number = 800
-# experiment.config.max_experiment_duration = '5h'
-# experiment.config.trial_concurrency = 2
-# experiment.config.trial_gpu_number = 1
-# experiment.config.training_service.use_active_gpu = True
-# experiment.config.training_service.max_trial_number_per_gpu = 2
-#
-# experiment.run(8080)
-# input()
+experiment = Experiment('local')
+experiment.config.experiment_name = 'ksp_trial'
+experiment.config.trial_command = 'python model_trial.py'
+experiment.config.trial_code_directory = '.'
+experiment.config.search_space = search_space
+experiment.config.tuner.name = 'TPE'
+experiment.config.tuner.class_args['optimize_mode'] = 'maximize'
+experiment.config.max_trial_number = 800
+experiment.config.max_experiment_duration = '5h'
+experiment.config.trial_concurrency = 2
+experiment.config.trial_gpu_number = 1
+experiment.config.training_service.use_active_gpu = True
+experiment.config.training_service.max_trial_number_per_gpu = 2
 
-
-nni.experiment.Experiment.stop()
-# nni.experiment.Experiment.view('4ate8f6u', 8080)
+experiment.run(8080)
+input()
